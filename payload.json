@@ -1,0 +1,18 @@
+{
+    "action": 1, // Action to drop event
+    "intake_uuid": "SET-123-UUID",
+    "description": "Text description",
+    "community_uuid": "SET-123-UUID",
+    "filters": [ 
+        {   // All filters must match to drop (can be 1 or many)
+            "field": "event.action",
+            "operator": "==",
+            "value": "Process execute"
+        },
+        {   
+            "field": "process.executable",
+            "operator": "==",
+            "value": "/path/to/file.exe"
+        }
+    ]
+}
