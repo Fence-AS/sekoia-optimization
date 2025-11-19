@@ -1,5 +1,6 @@
-from pathlib import Path
+"""Main module for Sekoia.io optimization rules management."""
 import logging
+from pathlib import Path
 
 from sekoia import action
 from sekoia.client import get_session
@@ -47,6 +48,10 @@ def agruments(args, session) -> None:
         
         action.delete_optimization_rule(session=session, uuid=args.delete)
         print(f"Optimization rule {args.delete} has been deleted.")
+        
+    if args.actions:
+        logger.info("Listing supported optimization rule actions.")
+        action.list_optimization_actions(session=session)
         
     
 

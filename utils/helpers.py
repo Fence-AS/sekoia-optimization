@@ -8,7 +8,15 @@ logger = logging.getLogger(__name__)
 
 
 def load_payload(payload_path: str = "payload.json") -> dict:
-    """Load a JSON payload from a file."""
+    """
+    Load a JSON payload from a file.
+
+    :param payload_path: The path to the JSON payload file, defaults to "payload.json".
+    :type payload_path: str, optional
+    :raises FileNotFoundError: If the file does not exist or is not accessible.
+    :return: The loaded JSON payload.
+    :rtype: dict
+    """
     if payload_path != "payload.json" and not verify_file_path(payload_path):
         raise FileNotFoundError(f"Payload file not found or not accessible: {payload_path}")
     
@@ -18,7 +26,12 @@ def load_payload(payload_path: str = "payload.json") -> dict:
 
 
 def pretty_print(obj) -> None:
-    """Pretty-print a JSON-serializable object."""
+    """
+    Pretty-print a JSON-serializable object.
+
+    :param obj: The object to pretty-print.
+    :type obj: _any_
+    """
     print(json.dumps(obj, indent=2, sort_keys=True, ensure_ascii=False))
 
 
@@ -34,13 +47,17 @@ def parse_args() -> argparse.Namespace:
     """
     # Define the argument parser
     arg_parser = argparse.ArgumentParser(
-        description=("SEKOIA API.\nSEKOIA API CLI Tool."),
+        description=(
+            "Sekoia.io Optimization Rules.\n"
+            "A CLI tool to simplify the management of Optimization Rules in the Sekoia API."
+        ),
         formatter_class=argparse.RawTextHelpFormatter,
     )
 
     # Create a group for optional arguments
     group = arg_parser.add_argument_group(
-        "Optional arguments", "Yippi yapp."
+        "Arguments", 
+        "Mutually exclusive arguments reflecting Sekoia's API Scheme."
     )
 
     # Make a mutually exclusive group for schedule and export
@@ -64,6 +81,12 @@ def parse_args() -> argparse.Namespace:
         "--list",
         action="store_true",
         help="List all optimization rules",
+    )
+    exclusive_group.add_argument(
+        "-a",
+        "--actions",
+        action="store_true",
+        help="List all supported optimization actions",
     )
     
     logger.debug("Command line arguments parsed successfully.")
