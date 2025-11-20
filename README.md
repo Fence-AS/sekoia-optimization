@@ -25,7 +25,7 @@ python main.py --help
 ### Options
 
 ```Text
-usage: main.py [-h] [-c [PATH] | -d UUID | -l | -a]
+usage: main.py [-h] [-l | -c [PATH] | -a | -g UUID | -r UUID | -d UUID | -e UUID]
 
 Sekoia.io Optimization Rules.
 A CLI tool to simplify the management of Optimization Rules in the Sekoia API.
@@ -36,10 +36,13 @@ options:
 Arguments:
   Mutually exclusive arguments reflecting Sekoia's API Scheme.
 
-  -c, --create [PATH]  Create an optimization rule from JSON payload. Default: ./payload.json
-  -d, --delete UUID    The rule UUID to delete
   -l, --list           List all optimization rules
+  -c, --create [PATH]  Create an optimization rule from JSON payload. Default: ./payload.json
   -a, --actions        List all supported optimization actions
+  -g, --get UUID       Get the given rule UUID
+  -r, --remove UUID    Remove the given rule UUID
+  -d, --disable UUID   Disable the given rule UUID
+  -e, --enable UUID    Enable the given rule UUID
 ```
 
 ---
@@ -80,5 +83,6 @@ Each filter consists of:
 - `not contains` Checks if the left value does not contain the right value
 - `exists`Checks if the specified key exists
 - `not exists` Checks if the specified key does not exist
+
 
 ---
