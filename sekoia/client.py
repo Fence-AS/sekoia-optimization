@@ -1,3 +1,4 @@
+"""Sekoia.io Optimization Rules API client."""
 import logging
 from typing import Any
 
@@ -8,13 +9,63 @@ from utils.startup import ENV_PATH
 
 logger = logging.getLogger(__name__)
 BASE_URL = "https://api.sekoia.io"
+BASE_PATH = "/v1/sic/conf/intakes/optimization_rules"
 
+
+def api_request(
+    session: requests.Session,
+    method: str, 
+    endpoint: str | None = None, 
+    params: dict[str, Any] | None = None,
+    json: dict[str, Any] | None = None,
+    expected_status: int = 200
+    ) -> dict[str,Any] | None:
+    """
+    Run an API request and return the parsed response.
+
+    :param session: The requests session.
+    :type session: requests.Session
+    :param method: HTTP method (GET, POST, etc.).
+    :type method: str
+    :param endpoint: API endpoint path, defaults to None.
+    :type endpoint: str | None, optional
+    :param params: HTTP query parameters, defaults to None.
+    :type params: dict[str, Any] | None, optional
+    :param json: JSON payload for the request, defaults to None.
+    :type json: dict[str, Any] | None, optional
+    :param expected_status: Expected HTTP status code(s), defaults to 200.
+    :type expected_status: int, optional
+    :return: Parsed JSON response or None.
+    :rtype: dict[str,Any] | None
+    """
+    # Send the request
+    full_path = _url(endpoint)
+    logger.info(f"Sending {method} API Request to {full_path}")
+    try:
+        response = session.request(
+            method=method.upper(),
+            url=full_path,
+            params=params,
+            json=json,
+        )
+        
+        # Parse resposne
+        response_text = _handle_response(response, expected_status)
+    
+        return response_text
+    
+    except Exception as error:
+        logger.error(f"Error during API request[]: {error}")
+        return None
+        
 
 def get_session():
     """Verify API token and build a session."""
     api_token = get_key(ENV_PATH, "SEKOIA_API_TOKEN")
     if not api_token:
-        raise SystemExit("Please set the SEKOIA_API_TOKEN variable in the .env file before running.")
+        raise SystemExit(
+            "Please set the SEKOIA_API_TOKEN variable in the .env file before running."
+        )
     
     return build_session(api_token)
     
@@ -41,9 +92,13 @@ def build_session(api_token: str) -> requests.Session:
     return session
 
 
-def _url(path: str) -> str:
+def _url(path: str | None = None) -> str:
     """Build the full URL from a path."""
-    return f"{BASE_URL}{path}"
+    url = f"{BASE_URL}{BASE_PATH}"
+    if path:
+        url += f"{path}"
+    
+    return url
 
 
 def _handle_response(

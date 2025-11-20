@@ -1,0 +1,1 @@
+"""Sekoia package for optimization rules management."""
