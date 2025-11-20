@@ -14,11 +14,13 @@ Python script for handling SEKOIA optimization rules.
 
 ## Usage
 
-```Python
+```Bash
 python main.py --help
 ```
 
-> **Set the API key in a `.env` file, i.e. `SEKOIA_API_TOKEN="API-TOKEN-123-HERE"`.**
+> ***NOTE:* Set the API key in a `.env` file located along side the `main.py` file.**
+> 
+> *Set the value as `SEKOIA_API_TOKEN="API-TOKEN-123-HERE"`.*
 
 
 
@@ -86,3 +88,4 @@ Each filter consists of:
 
 
 ---
+
