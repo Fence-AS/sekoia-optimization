@@ -1,4 +1,5 @@
-import argparse
+"""Helper functions for Sekoia.io Optimization Rules tool."""
+
 import json
 import logging
 import os
@@ -19,107 +20,153 @@ def load_payload(payload_path: str = "payload.json") -> dict:
     """
     if payload_path != "payload.json" and not verify_file_path(payload_path):
         raise FileNotFoundError(f"Payload file not found or not accessible: {payload_path}")
-    
-    logging.info(f"Loading payload from: {payload_path}")    
+
+    logging.info(f"Loading payload from: {payload_path}")
     with open(payload_path, encoding="utf-8") as f:
         return json.load(f)
 
 
-def pretty_print(obj) -> None:
+def print_rule(rule: dict, raw: bool = False) -> None:
+    """Print a single rule (used for --get, and both the --create preview and result)."""
+    print(_dump(rule) if raw else format_rule(rule))
+
+
+def print_rule_list(payload: dict, raw: bool = False) -> None:
+    """Print a {"items": [...], "total": N} list-of-rules response."""
+    print(_dump(payload) if raw else format_rule_list(payload))
+
+
+def print_actions(payload: dict, raw: bool = False) -> None:
+    """Print a {"actions": [...]} response."""
+    print(_dump(payload) if raw else format_actions(payload))
+
+
+def _dump(obj) -> str:
+    return json.dumps(obj, indent=2, sort_keys=True, ensure_ascii=False)
+
+
+def format_rule(rule: dict) -> str:
+    """Render a rule as a labeled detail block.
+
+    Fields: uuid/intake_uuid/format_uuid/community_uuid/agent_id/filters/
+    action/description/enabled/created_*/updated_*.
     """
-    Pretty-print a JSON-serializable object.
+    lines = []
+    if rule.get("uuid"):
+        lines.append(f"UUID:         {rule['uuid']}")
+    lines.append(f"Description:  {rule.get('description') or '(none)'}")
+    lines.append(f"Enabled:      {_yes_no(rule)}")
+    lines.append(f"Action:       {rule.get('action', '')}")
 
-    :param obj: The object to pretty-print.
-    :type obj: _any_
-    """
-    print(json.dumps(obj, indent=2, sort_keys=True, ensure_ascii=False))
+    for key, label in (
+        ("community_uuid", "Community"),
+        ("intake_uuid", "Intake"),
+        ("format_uuid", "Format"),
+        ("agent_id", "Agent"),
+    ):
+        if rule.get(key):
+            lines.append(f"{label + ':':<14}{rule[key]}")
+
+    filters = rule.get("filters") or []
+    if filters:
+        lines.append("Filters:")
+        lines.extend(f"  - {_format_filter(f)}" for f in filters)
+
+    for prefix, label in (("created", "Created"), ("updated", "Updated")):
+        if rule.get(f"{prefix}_at"):
+            lines.append(
+                f"{label + ':':<14}{rule[f'{prefix}_at']} by {rule.get(f'{prefix}_by', '?')} "
+                f"({rule.get(f'{prefix}_by_type', '?')})"
+            )
+    return "\n".join(lines)
 
 
-def parse_args() -> argparse.Namespace:
-    """
-    Parse command line arguments.
+def _yes_no(rule: dict) -> str:
+    return "yes" if rule.get("enabled", True) else "no"
 
-    This function sets up the argument parser and
-    defines the command line arguments that can be used.
 
-    :return: Parsed command line arguments.
-    :rtype: argparse.Namespace
-    """
-    # Define the argument parser
-    arg_parser = argparse.ArgumentParser(
-        description=(
-            "Sekoia.io Optimization Rules.\n"
-            "A CLI tool to simplify the management of Optimization Rules in the Sekoia API."
-        ),
-        formatter_class=argparse.RawTextHelpFormatter,
+def _format_filter(f: dict) -> str:
+    parts = [f.get("field", ""), f.get("operator", "")]
+    if "value" in f:
+        parts.append(_format_value(f["value"]))
+    return " ".join(parts)
+
+
+def _format_value(value) -> str:
+    return f'"{value}"' if isinstance(value, str) else str(value)
+
+
+def format_rule_list(payload: dict) -> str:
+    """Render a {"items": [...], "total": N} response as a UUID/ENABLED/ACTION/DESCRIPTION table."""
+    items = payload.get("items", [])
+    total = payload.get("total", len(items))
+    if not items:
+        return "No rules found."
+
+    headers = ("UUID", "ENABLED", "ACTION", "DESCRIPTION")
+    rows = [_rule_row(rule) for rule in items]
+    return _table(headers, rows) + f"\n\nShowing {len(items)} of {total} rule(s)."
+
+
+def _rule_row(rule: dict) -> tuple[str, str, str, str]:
+    return (
+        rule.get("uuid", ""),
+        _yes_no(rule),
+        str(rule.get("action", "")),
+        rule.get("description") or "",
     )
 
-    # Create a group for optional arguments
-    group = arg_parser.add_argument_group(
-        "Arguments", 
-        "Mutually exclusive arguments reflecting Sekoia's API Scheme."
-    )
 
-    # Make a mutually exclusive group for schedule and export
-    exclusive_group = group.add_mutually_exclusive_group()
-    exclusive_group.add_argument(
-        "-c",
-        "--create",
-        nargs="?",
-        const="payload.json",
-        metavar="PATH",
-        help="Create an optimization rule from JSON payload. Default: ./payload.json",
-    )
-    exclusive_group.add_argument(
-        "-d",
-        "--delete",
-        metavar="UUID",
-        help="The rule UUID to delete",
-    )
-    exclusive_group.add_argument(
-        "-l",
-        "--list",
-        action="store_true",
-        help="List all optimization rules",
-    )
-    exclusive_group.add_argument(
-        "-a",
-        "--actions",
-        action="store_true",
-        help="List all supported optimization actions",
-    )
-    
-    logger.debug("Command line arguments parsed successfully.")
-    return arg_parser.parse_args()
+def format_actions(payload: dict) -> str:
+    """Render a {"actions": [{action, name, description}, ...]} response as a table."""
+    actions = payload.get("actions", [])
+    if not actions:
+        return "No actions found."
+    headers = ("VALUE", "NAME", "DESCRIPTION")
+    rows = [_action_row(a) for a in actions]
+    return _table(headers, rows)
+
+
+def _action_row(a: dict) -> tuple[str, str, str]:
+    return (str(a.get("action", "")), a.get("name", ""), a.get("description", ""))
+
+
+def _table(headers: tuple, rows: list[tuple]) -> str:
+    widths = [max(len(h), max((len(r[i]) for r in rows), default=0)) for i, h in enumerate(headers)]
+
+    def line(row):
+        return "  ".join(cell.ljust(w) for cell, w in zip(row, widths, strict=True))
+
+    return "\n".join([line(headers), line(["-" * w for w in widths]), *[line(r) for r in rows]])
 
 
 def verify_file_path(file_path: str) -> bool:
     """
     Verify the given file path as writeable and accessable.
 
-    :param path: The file path to verify
-    :type path: str
+    :param file_path: The file path to verify
+    :type file_path: str
     :return: The stauts of the verification
     :rtype: bool
     """
     try:
         path = Path(file_path).expanduser().resolve()
         folder = path.parent
-        
+
         if not folder.is_dir():
-            logger.warning("Log path parent is not an existing directory.")
+            logger.warning("Path parent is not an existing directory.")
             return False
 
         if not os.access(folder, os.W_OK):
-            logger.warning("Log path parent is not writeable.")
+            logger.warning("Path parent is not writeable.")
             return False
 
         if path.is_dir():
-            logger.warning("Log path must be a file.")
+            logger.warning("Path must be a file, not a directory.")
             return False
-        
+
         return True
-    
+
     except Exception as e:
         logger.error(f"Failed to verify given file path with error: {e}")
         return False

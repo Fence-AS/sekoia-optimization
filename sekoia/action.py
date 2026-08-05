@@ -1,11 +1,11 @@
 """Sekoia.io optimization rules API actions."""
+
 import logging
 from typing import Any
 
 import requests
 
 from sekoia import client
-from utils import helpers
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ def list_optimization_rules(
     agent_id: str | None = None,
     limit: int = 20,
     offset: int = 0,
-) -> dict[str, Any]:
+) -> dict[str, Any] | None:
     """
     List SEKOIA Optimization rules.
 
@@ -49,21 +49,17 @@ def list_optimization_rules(
     if agent_id:
         params["match[agent_id]"] = agent_id
 
-    resp = session.get(
-        client._url("/v1/sic/conf/intakes/optimization_rules"), params=params
+    return client.api_request(
+        session=session,
+        method="GET",
+        params=params,
     )
-    resp_text = client._handle_response(resp, expected_status=200)
-    
-    print("List Optimization Rules\n------------------------------")
-    helpers.pretty_print(resp_text)
-    
-    return resp_text
 
 
 def create_optimization_rule(
     session: requests.Session,
     rule: dict[str, Any],
-) -> dict[str, Any]:
+) -> dict[str, Any] | None:
     """
     Create a SEKOIA Optimization rules.
 
@@ -74,16 +70,14 @@ def create_optimization_rule(
     :return: Created optimization rule.
     :rtype: dict[str, Any]
     """
-    resp = session.post(
-        client._url("/v1/sic/conf/intakes/optimization_rules"),
+    return client.api_request(
+        session=session,
+        method="POST",
         json=rule,
     )
-    
-    # According to schema: 200 on success 
-    return client._handle_response(resp, expected_status=200)
 
 
-def list_optimization_actions(session: requests.Session) -> dict[str, Any]:
+def list_optimization_actions(session: requests.Session) -> dict[str, Any] | None:
     """
     List supported for Optimization rule actions.
 
@@ -92,19 +86,17 @@ def list_optimization_actions(session: requests.Session) -> dict[str, Any]:
     :return: List of supported optimization rule actions.
     :rtype: dict[str, Any]
     """
-    resp = session.get(client._url("/v1/sic/conf/intakes/optimization_rules/actions"))
-    resp_text = client._handle_response(resp, expected_status=200)
-    
-    print("List Supported Optimization Actions\n------------------------------")
-    helpers.pretty_print(resp_text)
-    
-    return resp_text
+    return client.api_request(
+        session=session,
+        method="GET",
+        endpoint="/actions",
+    )
 
 
 def get_optimization_rule(
     session: requests.Session,
     uuid: str,
-) -> dict[str, Any]:
+) -> dict[str, Any] | None:
     """
     Get a SEKOIA Optimization rule.
 
@@ -115,10 +107,11 @@ def get_optimization_rule(
     :return: Optimization rule details.
     :rtype: dict[str, Any]
     """
-    resp = session.get(
-        client._url(f"/v1/sic/conf/intakes/optimization_rules/{uuid}")
+    return client.api_request(
+        session=session,
+        method="GET",
+        endpoint=f"/{uuid}",
     )
-    return client._handle_response(resp, expected_status=200)
 
 
 def delete_optimization_rule(
@@ -133,12 +126,14 @@ def delete_optimization_rule(
     :param uuid: The optimization rule UUID.
     :type uuid: str
     """
-    resp = session.delete(
-        client._url(f"/v1/sic/conf/intakes/optimization_rules/{uuid}")
+    client.api_request(
+        session=session,
+        method="DELETE",
+        endpoint=f"/{uuid}",
+        expected_status=204,
     )
-    client._handle_response(resp, expected_status=204)
-    
-    
+
+
 def disable_optimization_rule(
     session: requests.Session,
     uuid: str,
@@ -151,12 +146,14 @@ def disable_optimization_rule(
     :param uuid: The optimization rule UUID.
     :type uuid: str
     """
-    resp = session.post(
-        client._url(f"/v1/sic/conf/intakes/optimization_rules/{uuid}/disable")
+    client.api_request(
+        session=session,
+        method="POST",
+        endpoint=f"/{uuid}/disable",
+        expected_status=204,
     )
-    client._handle_response(resp, expected_status=204)
-    
-    
+
+
 def enable_optimization_rule(
     session: requests.Session,
     uuid: str,
@@ -169,8 +166,9 @@ def enable_optimization_rule(
     :param uuid: The optimization rule UUID.
     :type uuid: str
     """
-    resp = session.post(
-        client._url(f"/v1/sic/conf/intakes/optimization_rules/{uuid}/enable")
+    client.api_request(
+        session=session,
+        method="POST",
+        endpoint=f"/{uuid}/enable",
+        expected_status=204,
     )
-    client._handle_response(resp, expected_status=204)
-    

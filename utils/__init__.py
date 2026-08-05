@@ -1,0 +1,1 @@
+"""Utils package for Sekoia.io Optimization Rules tool."""

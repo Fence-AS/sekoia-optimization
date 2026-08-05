@@ -1,3 +1,5 @@
+"""Sekoia.io Optimization Rules API client."""
+
 import logging
 from typing import Any
 
@@ -8,16 +10,68 @@ from utils.startup import ENV_PATH
 
 logger = logging.getLogger(__name__)
 BASE_URL = "https://api.sekoia.io"
+BASE_PATH = "/v1/sic/conf/intakes/optimization_rules"
+
+
+def api_request(
+    session: requests.Session,
+    method: str,
+    endpoint: str | None = None,
+    params: dict[str, Any] | None = None,
+    json: dict[str, Any] | None = None,
+    expected_status: int = 200,
+) -> dict[str, Any] | None:
+    """
+    Run an API request and return the parsed response.
+
+    :param session: The requests session.
+    :type session: requests.Session
+    :param method: HTTP method (GET, POST, etc.).
+    :type method: str
+    :param endpoint: API endpoint path, defaults to None.
+    :type endpoint: str | None, optional
+    :param params: HTTP query parameters, defaults to None.
+    :type params: dict[str, Any] | None, optional
+    :param json: JSON payload for the request, defaults to None.
+    :type json: dict[str, Any] | None, optional
+    :param expected_status: Expected HTTP status code(s), defaults to 200.
+    :type expected_status: int, optional
+    :raises SekoiaApiError: If the request fails (network error or unexpected HTTP status).
+    :return: Parsed JSON response or None.
+    :rtype: dict[str,Any] | None
+    """
+    # Send the request
+    full_path = _url(endpoint)
+    logger.info(f"Sending {method} API Request to {full_path}")
+    try:
+        response = session.request(
+            method=method.upper(),
+            url=full_path,
+            params=params,
+            json=json,
+        )
+
+        return _handle_response(response, expected_status)
+
+    except requests.RequestException as error:
+        logger.error(f"Network error contacting {full_path}: {error}")
+        raise SekoiaApiError(f"Could not reach Sekoia API: {error}") from error
+
+    except SekoiaApiError as error:
+        logger.error(f"API request to {full_path} failed: {error}")
+        raise
 
 
 def get_session():
     """Verify API token and build a session."""
     api_token = get_key(ENV_PATH, "SEKOIA_API_TOKEN")
     if not api_token:
-        raise SystemExit("Please set the SEKOIA_API_TOKEN variable in the .env file before running.")
-    
+        raise SystemExit(
+            "Please set the SEKOIA_API_TOKEN variable in the .env file before running."
+        )
+
     return build_session(api_token)
-    
+
 
 def build_session(api_token: str) -> requests.Session:
     """
@@ -36,14 +90,18 @@ def build_session(api_token: str) -> requests.Session:
             "Accept": "application/json",
         }
     )
-    
+
     logger.info("Session created with Authorization header set.")
     return session
 
 
-def _url(path: str) -> str:
+def _url(path: str | None = None) -> str:
     """Build the full URL from a path."""
-    return f"{BASE_URL}{path}"
+    url = f"{BASE_URL}{BASE_PATH}"
+    if path:
+        url += f"{path}"
+
+    return url
 
 
 def _handle_response(
@@ -63,9 +121,7 @@ def _handle_response(
             detail = response.json()
         except Exception:
             detail = response.text
-        raise SekoiaApiError(
-            f"Request failed with status {response.status_code}: {detail}"
-        )
+        raise SekoiaApiError(f"Request failed with status {response.status_code}: {detail}")
 
     logger.info(f"Request recieved with status {response.status_code}")
 
@@ -77,6 +133,6 @@ def _handle_response(
 
     return response.text
 
+
 class SekoiaApiError(Exception):
     """Raised when the Sekoia API returns a non-success status code."""
-
