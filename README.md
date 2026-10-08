@@ -82,7 +82,9 @@ into new commands each time. `--list`'s `--community`/`--intake`/`--agent`/
 
 ## Create Rule Optimization
 
-> *Modify the `payload.json` file to match the event to drop.*
+> *Copy `payload.example.json` to `payload.json` and edit it to match the event you want to drop.
+> `payload.json` is gitignored, so your local rule (which may reference real intake/community UUIDs)
+> is never committed.*
 
 ### Rule Definition
 
