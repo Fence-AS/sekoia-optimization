@@ -123,7 +123,7 @@ def _handle_response(
             detail = response.text
         raise SekoiaApiError(f"Request failed with status {response.status_code}: {detail}")
 
-    logger.info(f"Request recieved with status {response.status_code}")
+    logger.info(f"Request received with status {response.status_code}")
 
     if response.status_code == 204:
         return None

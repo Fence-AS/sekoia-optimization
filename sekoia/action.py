@@ -32,7 +32,7 @@ def list_optimization_rules(
     :type agent_id: str | None, optional
     :param limit: Results page limit, defaults to 100
     :type limit: int, optional
-    :param offset: Offsett results page, defaults to 0
+    :param offset: Offset results page, defaults to 0
     :type offset: int, optional
     :return: List of optimization rules.
     :rtype: dict[str, Any]

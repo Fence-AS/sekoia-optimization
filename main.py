@@ -30,9 +30,9 @@ def main() -> None:
         cli.run_interactive(session)
         return
 
-    # Preform actions based on argument
+    # Perform actions based on argument
     session = get_session()
-    cli.handle_agruments(args, session)
+    cli.handle_arguments(args, session)
 
 
 if __name__ == "__main__":

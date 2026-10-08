@@ -142,11 +142,11 @@ def _table(headers: tuple, rows: list[tuple]) -> str:
 
 def verify_file_path(file_path: str) -> bool:
     """
-    Verify the given file path as writeable and accessable.
+    Verify the given file path as writeable and accessible.
 
     :param file_path: The file path to verify
     :type file_path: str
-    :return: The stauts of the verification
+    :return: The status of the verification
     :rtype: bool
     """
     try:

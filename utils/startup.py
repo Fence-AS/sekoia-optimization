@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
-# Set globl environment path
+# Set global environment path
 ROOT_DIR = Path(__file__).resolve().parent.parent
 ENV_PATH = ROOT_DIR / ".env"
 LOG_FILE = ROOT_DIR / ".api.log"

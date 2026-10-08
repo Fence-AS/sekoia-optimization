@@ -158,7 +158,7 @@ def _report_error(error: Exception) -> None:
 def _dispatch(args, session) -> None:
     """Run the action selected by args.
 
-    Raises on failure - callers decide what to do with it (exit the process
+    Raises on failure, callers decide what to do with it (exit the process
     for one-shot use, or log and keep looping for interactive mode).
 
     :param args: Arguments from command line (or a seeded interactive Namespace).
@@ -237,7 +237,7 @@ def _dispatch(args, session) -> None:
         print(f"Optimization rule {args.enable} has been enabled.")
 
 
-def handle_agruments(args, session) -> None:
+def handle_arguments(args, session) -> None:
     """One-shot CLI entry point: dispatch, and exit the process on any failure.
 
     :param args: Arguments from command line.
@@ -256,7 +256,7 @@ def run_interactive(session) -> None:
     """Menu-driven loop for interactive mode.
 
     Reuses `_dispatch` so the actual command logic is defined in exactly one
-    place - only the error-handling policy differs from `handle_agruments`
+    place, only the error-handling policy differs from `handle_arguments`
     (log and keep looping here, instead of exiting the process).
 
     :param session: The requests session.
