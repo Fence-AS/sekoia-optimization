@@ -111,7 +111,7 @@ def build_parser() -> argparse.ArgumentParser:
     list_group.add_argument("--intake", metavar="UUID", help="Filter by intake UUID")
     list_group.add_argument("--agent", metavar="UUID", help="Filter by agent ID")
     list_group.add_argument(
-        "--limit", type=int, default=20, metavar="N", help="Page limit (default: 20)"
+        "--limit", type=int, default=100, metavar="N", help="Page limit (default: 100)"
     )
     list_group.add_argument(
         "--offset", type=int, default=0, metavar="N", help="Page offset (default: 0)"

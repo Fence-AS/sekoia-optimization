@@ -16,7 +16,7 @@ def list_optimization_rules(
     community_uuid: str | None = None,
     intake_uuid: str | None = None,
     agent_id: str | None = None,
-    limit: int = 20,
+    limit: int = 100,
     offset: int = 0,
 ) -> dict[str, Any] | None:
     """
@@ -30,7 +30,7 @@ def list_optimization_rules(
     :type intake_uuid: str | None, optional
     :param agent_id: Agent ID, defaults to None
     :type agent_id: str | None, optional
-    :param limit: Results page limit, defaults to 20
+    :param limit: Results page limit, defaults to 100
     :type limit: int, optional
     :param offset: Offsett results page, defaults to 0
     :type offset: int, optional
