@@ -81,11 +81,11 @@ A rule has:
 - **Community UUID** (recommended): restricts the rule to intakes in this community.
 - **Dialect UUID** (recommended): restricts the rule to intakes using this dialect.
 - **Intake UUID** (optional): restricts the rule to this specific intake.
-- **Agent ID / Format UUID** (recommended): only relevant for intakes collected by the Sekoia Endpoint
-  Agent. The agent applies rules on itself and only applies rules matching its format. A rule on an
-  agent-collected intake without `format_uuid` (or `agent_id`, which sets it automatically) silently
-  never applies on the agent.
-- **Filters**: restricts the rule to events matching every filter. Filters only support
+- **Agent ID / Format UUID** (required for agent intakes): only relevant for intakes collected by the
+  Sekoia Endpoint Agent. The agent applies rules on itself and only applies rules matching its format.
+  A rule on an agent-collected intake without `format_uuid` (or `agent_id`, which sets it automatically)
+  silently never applies on the agent.
+- **Filters** (optional): restricts the rule to events matching every filter. Filters only support
   parsed fields; enriched fields like `sekoiaio.tags.*` don't work here.
 - **Action**: a bitmask of one or more actions to execute, see [Supported Actions](#supported-actions).
   Only `Ignore Event` (`1`) shows up as reduced volume on the platform's usage page. The other actions
