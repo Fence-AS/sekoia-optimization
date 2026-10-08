@@ -1,7 +1,7 @@
 
 # Sekoia Optimization Rules
 
-Python script for handling SEKOIA optimization rules.
+Python CLI for managing Sekoia.io Optimization Rules (filters that drop or reduce noisy events at the intake level) through Sekoia's REST API.
 
 - [Usage](#usage)
   - [Options](#options)
@@ -20,11 +20,7 @@ Python script for handling SEKOIA optimization rules.
 python main.py --help
 ```
 
-> ***NOTE:* Set the API key in a `.env` file located along side the `main.py` file.**
-> 
-> *Set the value as `SEKOIA_API_TOKEN="API-TOKEN-123-HERE"`.*
-
-
+Set the API key in a `.env` file next to `main.py`: `SEKOIA_API_TOKEN="API-TOKEN-123-HERE"`.
 
 ### Options
 
@@ -58,12 +54,11 @@ List options:
   --community UUID     Filter by community UUID
   --intake UUID        Filter by intake UUID
   --agent UUID         Filter by agent ID
-  --limit N            Page limit (default: 20)
+  --limit N            Page limit (default: 100)
   --offset N           Page offset (default: 0)
 ```
 
-Running `python main.py` with no flags at all enters an interactive menu
-instead of the usage message above — see [Interactive Mode](#interactive-mode).
+Running `python main.py` with no flags enters an interactive menu instead of the usage message above. See [Interactive Mode](#interactive-mode).
 
 ### Interactive Mode
 
@@ -71,75 +66,64 @@ instead of the usage message above — see [Interactive Mode](#interactive-mode)
 python main.py
 ```
 
-Enters a numbered menu (list/create/actions/get/remove/disable/enable/quit)
-that prompts for whatever each action needs (a UUID, a payload path) instead
-of a one-shot `-x` flag. Useful for exploring rules without re-typing UUIDs
-into new commands each time. `--list`'s `--community`/`--intake`/`--agent`/
-`--limit`/`--offset` filters aren't available in this mode — use the one-shot
-`-l` form for those.
+Enters a numbered menu (list/create/actions/get/remove/disable/enable/quit) that prompts for whatever each action needs: a UUID, a payload path. Useful for exploring rules without retyping UUIDs into new commands. The `--list` filters (`--community`/`--intake`/`--agent`/`--limit`/`--offset`) aren't available here, use the one-shot `-l` form for those.
 
 ---
 
 ## Create Rule Optimization
 
-> *Copy `payload.example.json` to `payload.json` and edit it to match the event you want to drop.
-> `payload.json` is gitignored, so your local rule (which may reference real intake/community UUIDs)
-> is never committed.*
+Copy `payload.example.json` to `payload.json` and edit it to match the event you want to drop. `payload.json` is gitignored, so your local rule, which may reference real intake or community UUIDs, is never committed.
 
 ### Rule Definition
 
-A rule is defined with the following components:
+A rule has:
 
-- **Optional Community UUID:** If specified, only intakes belonging to this community will be optimized.
-- **Optional Dialect UUID:** If specified, only intakes that use this specific dialect will be optimized.
-- **Optional Intake UUID:** If specified, only this specific intake will be optimized.
-- **Optional Agent ID / Format UUID:** Only relevant for intakes collected by the Sekoia Endpoint
-  Agent. The agent applies rules on itself, and only applies rules matching its format — a rule on
-  an agent-collected intake **without** `format_uuid` (or `agent_id`, which sets it automatically)
-  will silently never be applied on the agent.
-- **Optional Set of Filters** If specified, only events that match the defined filters will be optimized.
-  Filters only support parsed fields — enriched fields (e.g. `sekoiaio.tags.*`) can't be used here.
-- **Action:** A bitmask of one or more actions to execute (see [Supported Actions](#supported-actions)
-  below). Only the `Ignore Event` action (`1`) shows up as reduced volume on the platform's usage page —
-  the other actions still run, they just aren't reflected there.
+- **Community UUID** (optional): restricts the rule to intakes in this community.
+- **Dialect UUID** (optional): restricts the rule to intakes using this dialect.
+- **Intake UUID** (optional): restricts the rule to this specific intake.
+- **Agent ID / Format UUID** (optional): only relevant for intakes collected by the Sekoia Endpoint
+  Agent. The agent applies rules on itself and only applies rules matching its format. A rule on an
+  agent-collected intake without `format_uuid` (or `agent_id`, which sets it automatically) silently
+  never applies on the agent.
+- **Filters** (optional): restricts the rule to events matching every filter. Filters only support
+  parsed fields; enriched fields like `sekoiaio.tags.*` don't work here.
+- **Action**: a bitmask of one or more actions to execute, see [Supported Actions](#supported-actions).
+  Only `Ignore Event` (`1`) shows up as reduced volume on the platform's usage page. The other actions
+  still run, they just aren't reflected there.
 
 #### Supported Actions
 
-A rule's `action` value is a bitmask, so values can be combined (e.g. `3` = `Ignore Event` + `Delete Message Field`).
+A rule's `action` value is a bitmask, so values combine (e.g. `3` = `Ignore Event` + `Delete Message Field`).
 
 | Value | Action | Description |
 | :--- | :--- | :--- |
 | `1` | Ignore Event | Prevents the event from being analyzed or stored. |
 | `2` | Delete Message Field | Removes the `message` field from the event. |
 | `4` | Shrink Event | Retains only the minimum fields required for processing. |
-| `8` | Ignore Useless Event | Discards the event if the parser extracted nothing from it. No filters needed — this is self-filtering. |
+| `8` | Ignore Useless Event | Discards the event if the parser extracted nothing from it. Self-filtering, no filters needed. |
 | `16` | Delete Non-Standard Fields | Deletes fields not part of the official ECS/Sekoia Taxonomy. |
 
 ### Filters
 
-Each filter consists of:
+Each filter has:
 
-- **Key:** The field in the event that you want to evaluate.
-- **Operator:** The condition to apply for the evaluation (e.g., equals, contains).
-- **Optional Value:** The value against which the key will be compared. Its JSON type must match the
-  field's type — quote string values (`"value": "netflow"`), don't quote numeric values
-  (`"value": 4624`). A quoted number will make the filter fail.
+- **Key**: the field in the event to evaluate.
+- **Operator**: the condition to apply (equals, contains, etc).
+- **Value** (optional): the value to compare against. Its JSON type must match the field's type:
+  quote string values (`"value": "netflow"`), don't quote numbers (`"value": 4624`). A quoted number
+  makes the filter fail silently.
 
 #### Supported Operations
 
-- `==` Checks if two values are equal
-- `!=` Checks if two values are not equal
-- `>` Checks if the left value is greater than the right
-- `<` Checks if the left value is less than the right
-- `>=` Checks if the left value is greater than or equal to the right
-- `<=` Checks if the left value is less than or equal to the right
-- `in` Checks if the left value is in the right collection
-- `not in`Checks if the left value is not in the right collection
-- `contains` Checks if the left value contains the right value
-- `not contains` Checks if the left value does not contain the right value
-- `exists`Checks if the specified key exists
-- `not exists` Checks if the specified key does not exist
-
-
----
-
+- `==` equal
+- `!=` not equal
+- `>` greater than
+- `<` less than
+- `>=` greater than or equal to
+- `<=` less than or equal to
+- `in` left value is in the right collection
+- `not in` left value is not in the right collection
+- `contains` left value contains the right value
+- `not contains` left value does not contain the right value
+- `exists` the key exists
+- `not exists` the key does not exist
