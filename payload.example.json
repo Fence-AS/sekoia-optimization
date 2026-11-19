@@ -1,8 +1,9 @@
 {
+    "community_uuid": "SET-COMMUNITY-UUID",
+    "format_uuid": "SET-FORMAT-UUID",
+    "intake_uuid": "SET-INTAKE-UUID",
     "action": 1,
-    "intake_uuid": "SET-123-UUID",
     "description": "Text description",
-    "community_uuid": "SET-123-UUID",
     "filters": [
         {
             "field": "event.action",

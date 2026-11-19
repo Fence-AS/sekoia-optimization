@@ -9,6 +9,9 @@ from sekoia import client
 
 logger = logging.getLogger(__name__)
 
+# Enforced by the API (400 outside 1..100), but not stated in its OpenAPI spec.
+MAX_PAGE_SIZE = 100
+
 
 def list_optimization_rules(
     session: requests.Session,
@@ -54,6 +57,44 @@ def list_optimization_rules(
         method="GET",
         params=params,
     )
+
+
+def list_all_optimization_rules(
+    session: requests.Session,
+    *,
+    community_uuid: str | None = None,
+    intake_uuid: str | None = None,
+    agent_id: str | None = None,
+    offset: int = 0,
+) -> dict[str, Any]:
+    """
+    List every SEKOIA Optimization rule from `offset`, in requests of MAX_PAGE_SIZE.
+
+    :return: The rules, merged into one {"items": [...], "total": N} response.
+    :rtype: dict[str, Any]
+    """
+    items: list[dict[str, Any]] = []
+    total = 0
+    while True:
+        page = list_optimization_rules(
+            session,
+            community_uuid=community_uuid,
+            intake_uuid=intake_uuid,
+            agent_id=agent_id,
+            limit=MAX_PAGE_SIZE,
+            offset=offset,
+        )
+        page_items = page.get("items", [])
+        total = page.get("total", 0)
+        items.extend(page_items)
+        offset += len(page_items)
+
+        # An empty page guards against looping forever if `total` is off.
+        if not page_items or offset >= total:
+            break
+
+    logger.info(f"Fetched {len(items)} of {total} optimization rules.")
+    return {"items": items, "total": total}
 
 
 def create_optimization_rule(
