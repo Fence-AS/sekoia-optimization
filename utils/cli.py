@@ -9,6 +9,14 @@ from utils import helpers
 logger = logging.getLogger(__name__)
 
 
+def _page_size(value: str) -> int:
+    """Argparse type for --limit: an int within the API's accepted page size."""
+    size = int(value)
+    if not 1 <= size <= action.MAX_PAGE_SIZE:
+        raise argparse.ArgumentTypeError(f"must be between 1 and {action.MAX_PAGE_SIZE}")
+    return size
+
+
 def _prompt_uuid() -> str:
     return input("Rule UUID: ").strip()
 
@@ -111,10 +119,19 @@ def build_parser() -> argparse.ArgumentParser:
     list_group.add_argument("--intake", metavar="UUID", help="Filter by intake UUID")
     list_group.add_argument("--agent", metavar="UUID", help="Filter by agent ID")
     list_group.add_argument(
-        "--limit", type=int, default=100, metavar="N", help="Page limit (default: 100)"
+        "--limit",
+        type=_page_size,
+        default=50,
+        metavar="N",
+        help=f"Rules to show, 1 to {action.MAX_PAGE_SIZE} (default: 50)",
     )
     list_group.add_argument(
         "--offset", type=int, default=0, metavar="N", help="Page offset (default: 0)"
+    )
+    list_group.add_argument(
+        "--all",
+        action="store_true",
+        help="Show every rule, ignoring --limit",
     )
 
     arg_parser.add_argument(
@@ -155,6 +172,55 @@ def _report_error(error: Exception) -> None:
     print(f"Error: {error}")
 
 
+def _list_rules(args, session) -> dict:
+    """Fetch and print one page of rules (shared by --list and the interactive pager)."""
+    scope = {
+        "community_uuid": args.community,
+        "intake_uuid": args.intake,
+        "agent_id": args.agent,
+        "offset": args.offset,
+    }
+    if args.all:
+        logger.info(f"Listing all optimization rules (offset {args.offset}).")
+        rules = action.list_all_optimization_rules(session, **scope)
+    else:
+        logger.info(f"Listing optimization rules (limit {args.limit}, offset {args.offset}).")
+        rules = action.list_optimization_rules(session, limit=args.limit, **scope)
+    print("List Optimization Rules\n------------------------------")
+    helpers.print_rule_list(rules, raw=args.raw)
+    return rules
+
+
+def _page_rules(args, session) -> None:
+    """Interactive pager: show one page of rules at a time with n/p/q navigation."""
+    while True:
+        rules = _list_rules(args, session)
+        total = rules.get("total", 0)
+        has_next = args.offset + len(rules.get("items", [])) < total
+        has_prev = args.offset > 0
+        if not (has_next or has_prev):
+            return
+
+        page = args.offset // args.limit + 1
+        pages = -(-total // args.limit)  # ceiling division
+        options = ["n) next"] if has_next else []
+        options += ["p) previous"] if has_prev else []
+        options.append("q) quit")
+        prompt = f"Page {page} of {pages}  " + "  ".join(options) + ": "
+
+        while True:
+            choice = input(prompt).strip().lower()
+            if choice == "n" and has_next:
+                args.offset += args.limit
+                break
+            if choice == "p" and has_prev:
+                args.offset = max(0, args.offset - args.limit)
+                break
+            if choice in ("q", ""):
+                return
+            print("Unknown choice.")
+
+
 def _dispatch(args, session) -> None:
     """Run the action selected by args.
 
@@ -167,17 +233,10 @@ def _dispatch(args, session) -> None:
     :type session: _requests.Session_
     """
     if args.list:
-        logger.info("Listing optimization rules.")
-        rules = action.list_optimization_rules(
-            session=session,
-            community_uuid=args.community,
-            intake_uuid=args.intake,
-            agent_id=args.agent,
-            limit=args.limit,
-            offset=args.offset,
-        )
-        print("List Optimization Rules\n------------------------------")
-        helpers.print_rule_list(rules, raw=args.raw)
+        rules = _list_rules(args, session)
+        shown_up_to = args.offset + len(rules.get("items", []))
+        if not args.raw and shown_up_to < rules.get("total", 0):
+            print(f"More rules available: --offset {shown_up_to} for the next page, or --all.")
 
     elif args.create:
         logger.info("Creating an optimization rule.")
@@ -281,7 +340,10 @@ def run_interactive(session) -> None:
             setattr(args, attr, prompt())
 
             try:
-                _dispatch(args, session)
+                if attr == "list":
+                    _page_rules(args, session)
+                else:
+                    _dispatch(args, session)
             except Exception as error:
                 _report_error(error)
     except (EOFError, KeyboardInterrupt):
