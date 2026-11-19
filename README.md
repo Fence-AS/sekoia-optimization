@@ -27,7 +27,7 @@ Set the API key in a `.env` file next to `main.py`: `SEKOIA_API_TOKEN="API-TOKEN
 ```Text
 usage: main.py [-h] [-l | -c [PATH] | -a | -g UUID | -r UUID | -d UUID |
                -e UUID] [--community UUID] [--intake UUID] [--agent UUID]
-               [--limit N] [--offset N] [--raw] [-y]
+               [--limit N] [--offset N] [--all] [--raw] [-y]
 
 Sekoia.io Optimization Rules.
 A CLI tool to simplify the management of Optimization Rules in the Sekoia API.
@@ -54,8 +54,9 @@ List options:
   --community UUID     Filter by community UUID
   --intake UUID        Filter by intake UUID
   --agent UUID         Filter by agent ID
-  --limit N            Page limit (default: 100)
+  --limit N            Rules to show, 1 to 100 (default: 50)
   --offset N           Page offset (default: 0)
+  --all                Show every rule, ignoring --limit
 ```
 
 Running `python main.py` with no flags enters an interactive menu instead of the usage message above. See [Interactive Mode](#interactive-mode).
@@ -66,7 +67,7 @@ Running `python main.py` with no flags enters an interactive menu instead of the
 python main.py
 ```
 
-Enters a numbered menu (list/create/actions/get/remove/disable/enable/quit) that prompts for whatever each action needs: a UUID, a payload path. Useful for exploring rules without retyping UUIDs into new commands. The `--list` filters (`--community`/`--intake`/`--agent`/`--limit`/`--offset`) aren't available here, use the one-shot `-l` form for those.
+Enters a numbered menu (list/create/actions/get/remove/disable/enable/quit) that prompts for whatever each action needs: a UUID, a payload path. Useful for exploring rules without retyping UUIDs into new commands. Listing here shows 50 rules per page, with `n`/`p`/`q` to go to the next or previous page, or quit the listing and return to the menu. The `--list` filters (`--community`/`--intake`/`--agent`/`--limit`/`--offset`) aren't available here, use the one-shot `-l` form for those.
 
 ---
 
