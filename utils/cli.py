@@ -73,7 +73,7 @@ def build_parser() -> argparse.ArgumentParser:
         "-l",
         "--list",
         action="store_true",
-        help="List all optimization rules",
+        help="List optimization rules (50 by default, see --limit and --all)",
     )
     exclusive_group.add_argument(
         "-c",
